@@ -1,0 +1,7 @@
+.*/
+.env
+.idea
+backend/target
+mvnw*
+.DS_STORE
+backend/HELP.md
