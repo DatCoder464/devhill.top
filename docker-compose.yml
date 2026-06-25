@@ -1,13 +1,12 @@
-version: "3.8"
-
 services:
   db:
-    image: mysql:latest
+    image: mysql
     restart: unless-stopped
     environment:
       - MYSQL_DATABASE=db1
       - MYSQL_USER=${DB_USER}
       - MYSQL_PASSWORD=${DB_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
     volumes:
       - dbdata:/var/lib/mysql
     healthcheck:
@@ -21,7 +20,7 @@ services:
 
   devhill:
     build: backend
-    restart: unless-stopped
+    restart: on-failure:3
     depends_on:
       db:
         condition: service_healthy
@@ -33,14 +32,9 @@ services:
     networks:
       - proxy
       - backend
-    healthcheck:
-      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health" ]
-      interval: 15s
-      timeout: 5s
-      retries: 5
 
   nginx:
-    image: nginx:alpine
+    image: nginx
     restart: unless-stopped
     depends_on:
       - devhill
@@ -51,16 +45,16 @@ services:
       - proxy
 
   cloudflare-tunnel:
-    image: cloudflare/cloudflared:latest
-    restart: unless-stopped
+    image: cloudflare/cloudflared
+    restart: on-failure:3
     depends_on:
       - nginx
     volumes:
-      - ./.cloudflared/cloudflare.yml:/etc/cloudflared/config.yml:ro
-      - ./.cloudflared/${TUNNEL_TOKEN}.json:/etc/cloudflared/creds.json:ro
+      - ./.cloudflared/config.yml:/etc/cloudflared/config.yml
+      - ./.cloudflared/creds.json:/etc/cloudflared/creds.json
     environment:
       - TUNNEL_TOKEN=${TUNNEL_TOKEN}
-    command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run
+    command: tunnel --config /etc/cloudflared/config.yml run --token ${TUNNEL_TOKEN}
     networks:
       - proxy
 

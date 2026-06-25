@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://db:5432/db1
+    username: admin
+    password: password
+
+logging:
+  level:
+    root: WARN
